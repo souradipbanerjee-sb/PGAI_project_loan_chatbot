@@ -31,8 +31,6 @@ SYNONYMS = {
     'Model_Description': ['modeldescription', 'model', 'vehiclemodel', 'modelname', 'modeldesc'],
     'Actual_Decision': ['decision', 'actualdecision', 'loandecision', 'status', 'outcome', 'label', 'target'],
 }
-SCHEMA = {'type': 'object', 'additionalProperties': False,
-          'properties': {f: {'type': ['string', 'null']} for f in FIELDS}, 'required': list(FIELDS)}
 
 
 def _norm(h) -> str:
@@ -53,15 +51,18 @@ def auto_map(df: pd.DataFrame, llm=None):
                 break
     note = ''
     missing = [f for f in FIELDS if mapping[f] is None]
-    if missing and llm is not None and llm.available:
-        free = [c for c in cols if c not in used]
+    free = [c for c in cols if c not in used]
+    # ask the LLM only when something the model needs is still unmatched (optional extras alone are not worth a call)
+    if problems(mapping) and free and llm is not None and llm.available:
         samples = {str(c): [mask_pii(str(v))[:40] for v in df[c].dropna().astype(str).unique()[:4]] for c in free}
         prompt = ('Map spreadsheet columns to loan-model fields. Return for each field the EXACT column name from '
                   'the list, or null if no column clearly holds that data. Use each column at most once.\n'
                   f'Fields: {json.dumps({f: FIELDS[f][0] for f in missing})}\n'
                   f'Columns with sample values: {json.dumps(samples, ensure_ascii=False)}')
+        schema = {'type': 'object', 'additionalProperties': False,
+                  'properties': {f: {'type': ['string', 'null']} for f in missing}, 'required': missing}
         try:
-            sug = llm.json([{'role': 'user', 'content': prompt}], SCHEMA, name='mapping')
+            sug = llm.json([{'role': 'user', 'content': prompt}], schema, name='mapping')
             for f in missing:
                 c = sug.get(f)
                 if c in free and c not in used:

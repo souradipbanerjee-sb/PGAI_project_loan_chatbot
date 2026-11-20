@@ -10,6 +10,14 @@ import pandas as pd
 NUM = ['LTV', 'Loan_Amount', 'Age']
 MIN_MAKE_SHARE = 0.01          # makes below 1% of training rows are grouped as OTHER
 BRAND_WORDS = {'TVS'}          # manufacturer name: too generic to match inside a longer make string
+# Names applicants use for the training makes (from Model_Variant / Model_Description in the training data).
+# Checked before plain make-name matching, most specific first (e.g. "SCOOTY ZEST" is the ZEST make, not SCOOTY).
+MAKE_ALIASES = [
+    (r'SCOOTY\s*ZEST', 'ZEST'), (r'SCOOTY\s*PEP', 'SCOOTY'), (r'STAR\s*CITY', 'CITY PLUS'),
+    (r'XL\s*-?\s*100', 'MOPEDS'), (r'XL', 'MOPEDS'), (r'MOPEDS?', 'MOPEDS'),
+    (r'E[\s-]*BIKE', 'TVS'), (r'IQUBE', 'TVS'), (r'ELECTRIC', 'TVS'), (r'EV', 'TVS'),
+    (r'N\s*TORQ', 'NTORQ'),
+]
 PAST_YES = {'PAST_LOANS_ACTIVE', 'YES', 'Y', '1', '1.0', 'TRUE', 'ACTIVE'}
 PAST_NO = {'NO_PAST_LOANS', 'NO', 'N', '0', '0.0', 'FALSE', 'NONE'}
 # values that cannot be real: treated as missing (then median-filled), not just clipped
@@ -40,6 +48,10 @@ def fit_spec(raw: pd.DataFrame) -> dict:
     }
 
 
+def _word(pattern: str, text: str) -> bool:
+    return re.search(r'(?<![A-Z0-9])' + pattern + r'(?![A-Z0-9])', text) is not None
+
+
 def map_make(m: str, spec: dict):
     """Return (make used by the model, warning or None)."""
     kept, grouped = spec['kept_makes'], spec['grouped_makes']
@@ -49,6 +61,10 @@ def map_make(m: str, spec: dict):
         return 'OTHER', None                     # rare in training: OTHER by design
     if not m:
         return 'OTHER', 'Make_Code missing -> OTHER'
+    for alias, k in MAKE_ALIASES:                # model / category names people use for the training makes
+        if _word(alias, m) and k in kept + grouped:
+            target = k if k in kept else 'OTHER'
+            return target, f'Make_Code "{m}" matched to {k}' + (' (grouped as OTHER)' if target == 'OTHER' else '')
     for k in sorted([x for x in kept + grouped if x not in BRAND_WORDS], key=len, reverse=True):
         if re.search(r'(?<![A-Z0-9])' + re.escape(k) + r'(?![A-Z0-9])', m):
             target = k if k in kept else 'OTHER'

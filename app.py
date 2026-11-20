@@ -20,7 +20,7 @@ from sklearn.metrics import confusion_matrix, precision_score, recall_score, acc
 import chat_engine as ce
 import column_mapper as cm
 import predict
-from llm import LLM, PROVIDERS
+from llm import LLM
 from pii import mask_pii
 from sheets_logger import SheetsLogger
 
@@ -38,10 +38,7 @@ def secret(key, default=''):
 
 @st.cache_resource
 def get_llm():
-    provider = secret('LLM_PROVIDER', 'groq').lower()
-    provider = provider if provider in PROVIDERS else 'groq'
-    p = provider.upper()
-    return LLM(secret(f'{p}_API_KEY'), provider, secret(f'{p}_MODEL') or None)
+    return LLM(secret('GROQ_API_KEY'), secret('GROQ_MODEL') or None)
 
 
 @st.cache_resource

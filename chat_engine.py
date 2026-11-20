@@ -19,8 +19,17 @@ ORDER = ['make', 'loan_amount', 'vehicle_price', 'age', 'past_loans']
 NUMERIC = {'loan_amount', 'vehicle_price', 'ltv', 'age'}
 LABEL = {'make': 'vehicle', 'loan_amount': 'loan amount', 'vehicle_price': 'vehicle on-road price',
          'ltv': 'loan-to-value ratio', 'age': 'age', 'past_loans': 'existing loans'}
+# Vehicles in the training data, by product type (Product_Code), most financed first. Shown with the vehicle question.
+VEHICLE_OPTIONS = {
+    'Motorcycle': ['Apache', 'Raider', 'Sport', 'Radeon', 'Star City Plus', 'Ronin'],
+    'Scooter': ['Jupiter', 'NTorq', 'Zest', 'Scooty Pep Plus'],
+    'Moped': ['XL 100'],
+    'Electric': ['TVS e-bike'],
+}
+OPTIONS_MD = ('\n\n' + '\n'.join(f'- **{cat}:** {", ".join(models)}' for cat, models in VEHICLE_OPTIONS.items())
+              + '\n\nAny other model is fine too, just type its name.')
 QUESTION = {
-    'make': 'Which two-wheeler are you buying? Just the brand or model is fine (for example TVS Jupiter or Apache RTR 160).',
+    'make': 'Which two-wheeler are you buying? Just the model name is fine.',
     'loan_amount': 'How much loan do you need, in rupees?',
     'vehicle_price': 'What is the on-road price of the vehicle, in rupees?',
     'age': 'How old are you?',
@@ -33,7 +42,7 @@ NEXT_STEPS = {
                  'loan-to-value ratio. A dealership executive can also review the application with you.'),
 }
 GREETING = ("Hi, I'm the ABC Credit two-wheeler loan assistant. I need just 5 quick answers (about a minute) to give "
-            "you an instant decision, and I won't ask for your name or ID numbers. " + QUESTION['make'])
+            "you an instant decision, and I won't ask for your name or ID numbers. " + QUESTION['make'] + OPTIONS_MD)
 
 YES = {'yes', 'y', 'yeah', 'yep', 'yup', 'haan', 'ha', 'true', '1', 'active', 'have', 'i have', 'past_loans_active'}
 NO = {'no', 'n', 'nope', 'nah', 'none', 'nil', 'false', '0', 'no loan', 'no loans', 'nothing', 'no_past_loans'}
@@ -45,7 +54,9 @@ EXTRACT_SCHEMA = {
 }
 EXTRACT_PROMPT = """You extract loan-application fields from the applicant's latest chat message.
 The assistant's last question was about: {asking}.
-Fields: make (vehicle brand/model text as written), loan_amount (INR), vehicle_price (on-road price, INR),
+Fields: make (vehicle model text as written; fix obvious misspellings of these models: Apache, Raider, Sport, Radeon,
+Star City Plus, Ronin, Jupiter, NTorq, Zest, Scooty Pep Plus, XL 100, TVS e-bike), loan_amount (INR),
+vehicle_price (on-road price, INR),
 ltv (loan-to-value %, only if the applicant states it explicitly), age (years), past_loans (any other active loan now).
 Rules:
 - Return null for anything not mentioned. A bare answer like "30" or "yes" answers the field that was asked.
@@ -255,7 +266,14 @@ def template(plan, state):
 
 
 def reply_stream(plan, state, llm):
-    """Yield the reply text: worded by the LLM when available, otherwise a fixed template."""
+    """Yield the reply text: worded by the LLM when available, otherwise a fixed template.
+    Whenever the vehicle is being asked for, the list of available models is appended verbatim."""
+    yield from _reply_text(plan, state, llm)
+    if plan.get('action') in ('ask', 'reask') and plan.get('field') == 'make':
+        yield OPTIONS_MD
+
+
+def _reply_text(plan, state, llm):
     if llm is not None and llm.available and not plan.get('extractor', '').startswith('rules ('):
         try:
             gen = llm.stream([{'role': 'system', 'content': COMPOSE_PROMPT},

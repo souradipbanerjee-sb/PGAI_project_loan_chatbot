@@ -1,4 +1,4 @@
-"""Minimal client for OpenAI-compatible Chat Completions APIs (Groq or OpenAI), via plain HTTPS.
+"""Minimal Groq Chat Completions client, via plain HTTPS.
 
 Used only in the interaction layer: reading the applicant's answers and wording replies.
 It never makes or changes the credit decision.
@@ -6,17 +6,13 @@ It never makes or changes the credit decision.
 import json
 import requests
 
-PROVIDERS = {
-    'groq': {'url': 'https://api.groq.com/openai/v1/chat/completions', 'model': 'openai/gpt-oss-120b'},
-    'openai': {'url': 'https://api.openai.com/v1/chat/completions', 'model': 'gpt-4.1-mini'},
-}
+GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
+DEFAULT_MODEL = 'openai/gpt-oss-120b'
 
 
 class LLM:
-    def __init__(self, api_key, provider='groq', model=None, timeout=20):
-        cfg = PROVIDERS[provider]
-        self.provider, self.url = provider, cfg['url']
-        self.model = model or cfg['model']
+    def __init__(self, api_key, model=None, timeout=20):
+        self.url, self.model = GROQ_URL, (model or DEFAULT_MODEL)
         self.api_key, self.timeout = (api_key or '').strip(), timeout
 
     @property
@@ -25,14 +21,13 @@ class LLM:
 
     @property
     def name(self) -> str:
-        return f'{self.provider}:{self.model}'
+        return f'groq:{self.model}'
 
     def _body(self, messages, max_tokens, temperature):
-        body = {'model': self.model, 'messages': messages, 'max_completion_tokens': max_tokens}
+        body = {'model': self.model, 'messages': messages, 'max_completion_tokens': max_tokens,
+                'temperature': temperature}
         if 'gpt-oss' in self.model:                       # reasoning model: keep thinking short and hidden
-            body.update(reasoning_effort='low', include_reasoning=False, temperature=temperature)
-        elif not self.model.startswith(('gpt-5', 'gpt-6', 'o1', 'o3', 'o4')):  # these reject temperature
-            body['temperature'] = temperature
+            body.update(reasoning_effort='low', include_reasoning=False)
         return body
 
     def _headers(self):
@@ -43,7 +38,7 @@ class LLM:
         if not r.ok:
             msg = r.text[:200]
             r.close()
-            raise RuntimeError(f'{self.provider} error {r.status_code}: {msg}')
+            raise RuntimeError(f'groq error {r.status_code}: {msg}')
         return r
 
     def json(self, messages, schema: dict, name: str = 'result', max_tokens: int = 700) -> dict:

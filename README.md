@@ -7,7 +7,7 @@ A Streamlit app that gives an **Approve / Decline** decision on a two-wheeler lo
   row and returns the file with the decision appended as the **last column** (`Predicted_Decision`).
 
 The decision comes **only from the trained XGBoost model** (a decline probability compared against a threshold of 0.53).
-The language model (Groq `openai/gpt-oss-120b`, or OpenAI) works only in the interaction layer: it reads answers into
+The language model (Groq, `openai/gpt-oss-120b`) works only in the interaction layer: it reads answers into
 fields, words the replies, and suggests column matches for uploaded files. It never makes or changes a decision.
 
 ## How it works
@@ -22,7 +22,7 @@ fields, words the replies, and suggests column matches for uploaded files. It ne
 | Mask personal data | `pii.py` masks phone, email, Aadhaar, PAN and names before anything is logged or sent to the LLM |
 | Log every turn and batch row | `sheets_logger.py` → Google Apps Script (`apps_script/Code.gs`) → Google Sheet |
 
-**Questions asked (5):** vehicle make/model, loan amount, on-road price (used to compute LTV; skipped if the applicant
+**Questions asked (5):** vehicle model (the question lists the models in the training data by category: motorcycle, scooter, moped and electric; any other model is accepted and scored as `OTHER`), loan amount, on-road price (used to compute LTV; skipped if the applicant
 states the LTV), age, and active past loans. These are the model's features: LTV, Loan_Amount, Age, PAST_LOANS_ACTIVE
 and Make_Code. Several answers can be given in one message.
 
@@ -68,9 +68,9 @@ The script creates three tabs on first use:
 | `app.py` | Streamlit user interface (chat and batch) |
 | `chat_engine.py` | Question flow, validation, and the call to the model |
 | `column_mapper.py` | Matches uploaded columns to model inputs (by name, then LLM) |
-| `llm.py` | Minimal Groq/OpenAI chat client |
+| `llm.py` | Minimal Groq chat client |
 | `pii.py` | Personal-data masking |
 | `sheets_logger.py`, `apps_script/Code.gs` | Google Sheets logging |
 | `pipeline.py`, `predict.py` | Encoding, input checks and scoring (shared by training and the app) |
-| `train_xgb.py` | Reproducible model training (reads `training_data.xlsx`) |
+| `train_xgb.py` | Reproducible model training. It reads `training_data.xlsx` (sheet `training_data_cleaned`), which is **not in this repository**: place it in the project folder to retrain |
 | `xgb_model.json`, `xgb_model_meta.json` | The trained model, threshold and encoding settings |
