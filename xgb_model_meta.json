@@ -1,0 +1,70 @@
+{
+  "version": 2,
+  "threshold": 0.53,
+  "threshold_basis": "fixed at 0.53 by user choice (F2-optimal value kept as threshold_f2 for reference)",
+  "label": {
+    "1": "DECLINED",
+    "0": "APPROVED"
+  },
+  "model_variant": "monotonic",
+  "monotone_constraints": {
+    "LTV": 1,
+    "Age": -1
+  },
+  "n_trees": 192,
+  "scale_pos_weight": 18.030201342281877,
+  "seed": 42,
+  "spec": {
+    "kept_makes": [
+      "APACHE",
+      "JUPITER",
+      "MOPEDS",
+      "NTORQ",
+      "RADEON",
+      "RAIDER",
+      "SPORT",
+      "TVS",
+      "ZEST"
+    ],
+    "grouped_makes": [
+      "CITY PLUS",
+      "RONIN",
+      "SCOOTY"
+    ],
+    "numeric": {
+      "LTV": {
+        "min": 0.0,
+        "max": 99.6,
+        "median": 81.32
+      },
+      "Loan_Amount": {
+        "min": 16569.0,
+        "max": 286847.0,
+        "median": 90175.0
+      },
+      "Age": {
+        "min": 18.0,
+        "max": 69.0,
+        "median": 32.0
+      }
+    },
+    "past_default": 0,
+    "features": [
+      "LTV",
+      "Loan_Amount",
+      "Age",
+      "PAST_LOANS_ACTIVE",
+      "Make_APACHE",
+      "Make_JUPITER",
+      "Make_MOPEDS",
+      "Make_NTORQ",
+      "Make_RADEON",
+      "Make_RAIDER",
+      "Make_SPORT",
+      "Make_TVS",
+      "Make_ZEST",
+      "Make_OTHER"
+    ]
+  },
+  "threshold_f2": 0.5608826279640198
+}

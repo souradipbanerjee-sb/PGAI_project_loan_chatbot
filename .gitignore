@@ -1,0 +1,22 @@
+# --- secrets: never commit ---
+.streamlit/secrets.toml
+.env
+*.env
+*secret*
+!**/secrets.toml.example
+
+# --- python / os noise ---
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+Thumbs.db
+
+# --- training data (kept local, not published) + scratch outputs ---
+*_scored.csv
+*_scored.xlsx
+training_data*.xlsx
+~$*
+
+# --- local tooling ---
+.claude/

@@ -1,0 +1,31 @@
+{
+  "threshold": 0.5600497722625732,
+  "scale_pos_weight": 18.030201342281877,
+  "best_iteration": 113,
+  "features": [
+    "LTV",
+    "Loan_Amount",
+    "Age",
+    "PAST_LOANS_ACTIVE",
+    "Make_APACHE",
+    "Make_CITY_PLUS",
+    "Make_JUPITER",
+    "Make_MOPEDS",
+    "Make_NTORQ",
+    "Make_RADEON",
+    "Make_RAIDER",
+    "Make_RONIN",
+    "Make_SCOOTY",
+    "Make_SPORT",
+    "Make_TVS",
+    "Make_ZEST"
+  ],
+  "seed": 42,
+  "threshold_f1": 0.6508499383926392,
+  "threshold_f2": 0.5600497722625732,
+  "threshold_basis": "F2-optimal on out-of-fold training predictions",
+  "label": {
+    "1": "DECLINED",
+    "0": "APPROVED"
+  }
+}
